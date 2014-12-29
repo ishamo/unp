@@ -1,5 +1,18 @@
 #include "unp.h"
 
+void sig_chld(int signo)
+{
+	pid_t pid;
+	int stat;
+
+	pid = wait(&stat);
+	printf("child %d terminated\n", pid);
+	return;
+}
+
+
+
+
 int main(int argc, char **argv)
 {
 	int listenfd, connfd;
@@ -17,7 +30,7 @@ int main(int argc, char **argv)
 	Bind(listenfd, (SA *)&servaddr, sizeof(servaddr));
 
 	Listen(listenfd, LISTENQ);
-
+	Signal(SIGCHLD, sig_chld);
 	for (; ; ){
 		clilen = sizeof(cliaddr);
 		connfd = Accept(listenfd, (SA *)&cliaddr, &clilen);
