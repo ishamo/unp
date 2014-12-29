@@ -1,14 +1,14 @@
 #include "unp.h"
 
-void sig_chld(int signo)
+/*void sig_chld(int signo)
 {
 	pid_t pid;
 	int stat;
 
-	pid = wait(&stat);
-	printf("child %d terminated\n", pid);
+	while ((pid = waitpid(-1, &stat, WNOHANG)) > 0)
+		printf("child %d terminated\n", pid);
 	return;
-}
+}*/
 
 
 
@@ -19,6 +19,7 @@ int main(int argc, char **argv)
 	pid_t childpid;
 	socklen_t clilen;
 	struct sockaddr_in cliaddr, servaddr;
+	void sig_chld(int);
 
 	listenfd = Socket(AF_INET, SOCK_STREAM, 0);
 
@@ -33,7 +34,12 @@ int main(int argc, char **argv)
 	Signal(SIGCHLD, sig_chld);
 	for (; ; ){
 		clilen = sizeof(cliaddr);
-		connfd = Accept(listenfd, (SA *)&cliaddr, &clilen);
+		if ((connfd = accept(listenfd, (SA *)&cliaddr, &clilen)) < 0){
+			if (errno == EINTR)
+				continue;
+			else
+				err_sys("accept error");
+		}
 		if ((childpid = Fork()) == 0){
 			Close(listenfd);
 			str_echo(connfd);
